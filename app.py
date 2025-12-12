@@ -1,20 +1,21 @@
-# -*- coding: utf-8 -*-
+\# -*- coding: utf-8 -*-
 # Streamlit, Google Gemini API를 사용한 애플리케이션
 
 import streamlit as st
 from google import genai
-# 가장 안정적인 임포트 방식을 사용합니다.
+# 핵심 수정: 오류 클래스는 반드시 'google.genai.errors' 경로에서 임포트해야 합니다.
+# 이 경로가 실패하면, 설치된 라이브러리 버전이나 환경 캐시 문제입니다.
 try:
-    from google.genai import (
+    from google.genai.errors import (
         PermissionDenied,
         ResourceExhausted,
         Unauthenticated,
         APIError
     )
 except ImportError as e:
-    # 패키지 버전 문제 발생 시 사용자에게 안내합니다.
+    # 이 임포트 에러가 다시 발생하면, 다음 단계를 진행해야 합니다.
     st.error(f"라이브러리 임포트 오류가 발생했습니다: {e}")
-    st.warning("`google-genai` 패키지 버전이 너무 낮거나 올바르게 설치되지 않았을 수 있습니다. `requirements.txt` 파일을 확인하고 **google-genai>=0.14.0**으로 설정했는지 확인해주세요.")
+    st.warning("⚠️ **Streamlit Cloud 캐시 문제일 가능성이 높습니다.** 앱을 다시 시작할 때 **'Clear cache and rerun'**을 선택하거나 **'Manage app -> Delete app' 후 재배포**를 시도해주세요.")
     st.stop()
 except Exception as e:
     st.error(f"예상치 못한 초기화 오류: {e}")
