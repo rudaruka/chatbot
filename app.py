@@ -1,10 +1,6 @@
-\# -*- coding: utf-8 -*-
-# Streamlit, Google Gemini API를 사용한 애플리케이션
-
 import streamlit as st
 from google import genai
-# 핵심 수정: 오류 클래스는 반드시 'google.genai.errors' 경로에서 임포트해야 합니다.
-# 이 경로가 실패하면, 설치된 라이브러리 버전이나 환경 캐시 문제입니다.
+# google.genai.errors 경로가 최신 버전에서 표준입니다.
 try:
     from google.genai.errors import (
         PermissionDenied,
@@ -13,9 +9,10 @@ try:
         APIError
     )
 except ImportError as e:
-    # 이 임포트 에러가 다시 발생하면, 다음 단계를 진행해야 합니다.
+    # 캐시 지우고 재실행했음에도 이 오류가 계속되면,
+    # 이는 Streamlit Cloud 환경 자체의 문제입니다.
     st.error(f"라이브러리 임포트 오류가 발생했습니다: {e}")
-    st.warning("⚠️ **Streamlit Cloud 캐시 문제일 가능성이 높습니다.** 앱을 다시 시작할 때 **'Clear cache and rerun'**을 선택하거나 **'Manage app -> Delete app' 후 재배포**를 시도해주세요.")
+    st.warning("⚠️ **심각한 환경 문제입니다.** Streamlit Cloud에서 캐시를 지웠는데도 이 오류가 계속된다면, GitHub에서 프로젝트를 **삭제 후 재배포**를 시도하거나, `google-genai`의 버전을 명시한 `requirements.txt`가 올바른지 다시 확인해야 합니다.")
     st.stop()
 except Exception as e:
     st.error(f"예상치 못한 초기화 오류: {e}")
@@ -35,7 +32,7 @@ try:
 except KeyError:
     st.error("🚨 환경 변수 오류: Streamlit Secrets에서 'GEMINI_API_KEY'를 찾을 수 없습니다.")
     st.info("Streamlit Cloud 설정 (Settings -> Secrets)에서 API 키를 `GEMINI_API_KEY = \"YOUR_KEY\"` 형식으로 등록했는지 확인해주세요.")
-    st.stop() # 키가 없으면 실행을 중지합니다.
+    st.stop()
 
 # --- 클라이언트 초기화 ---
 client = None
@@ -47,11 +44,10 @@ if api_key:
         st.sidebar.text("이제 AI 응답 테스트를 할 수 있습니다.")
     except Exception as e:
         st.error(f"클라이언트 초기화 중 예상치 못한 오류가 발생했습니다. 키 유효성을 확인해주세요: {e}")
-        client = None # 클라이언트 초기화 실패 시 None으로 설정
+        client = None 
 
 # --- API 호출 및 오류 진단 ---
 if client:
-    # 3. 모델 설정 및 프롬프트
     model = 'gemini-2.5-flash'
     prompt = st.text_area(
         "테스트 프롬프트 (수정 가능)",
@@ -76,22 +72,19 @@ if client:
                 st.info(response.text)
 
             except (PermissionDenied, Unauthenticated) as e:
-                # HTTP 401 (Unauthenticated) 또는 403 (PermissionDenied) 처리
                 st.error("🛑 권한/인증 오류 (HTTP 401/403): API 키 문제")
                 st.warning("1. **API 키가 만료되거나 취소되지 않았는지** 확인해주세요.")
-                st.warning("2. **Google Cloud Console에서 해당 프로젝트의 결제(Billing)가 활성화**되어 있는지 확인해주세요. 결제 없이는 작동하지 않습니다.")
+                st.warning("2. **Google Cloud Console에서 해당 프로젝트의 결제(Billing)가 활성화**되어 있는지 확인해주세요.")
                 st.text(f"상세 오류: {e}")
 
             except ResourceExhausted as e:
-                # HTTP 429 (ResourceExhausted) 처리
                 st.error("📈 할당량 초과 오류 (HTTP 429): 사용 제한 초과")
-                st.warning("👉 **해결책**: API 사용량이 너무 많습니다. 잠시 후 다시 시도하거나, Google Cloud Console에서 할당량을 늘려주세요.")
+                st.warning("👉 **해결책**: API 사용량이 너무 많습니다. 잠시 후 다시 시도하거나, 할당량을 늘려주세요.")
                 st.text(f"상세 오류: {e}")
 
             except APIError as e:
-                # 기타 일반적인 API 오류
                 st.error(f"⚠️ API 호출 중 일반 오류가 발생했습니다. (Gemini 서버 문제 또는 요청 형식 오류)")
-                st.warning("👉 **해결책**: API 키에 IP 주소나 HTTP 참조 등의 **제한(Restrictions)**이 걸려 있다면 임시적으로 제거해 보세요. Streamlit Cloud의 서버 IP는 계속 변하기 때문입니다.")
+                st.warning("👉 **해결책**: API 키에 IP 주소나 HTTP 참조 등의 **제한(Restrictions)**이 걸려 있다면 임시적으로 제거해 보세요.")
                 st.text(f"상세 오류: {e}")
 
             except Exception as e:
